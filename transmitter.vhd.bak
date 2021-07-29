@@ -1,0 +1,44 @@
+library ieee ;
+use ieee.std_logic_1164.all ;
+use ieee.std_logic_unsigned.all ;
+entity transmitter is
+   port (  resetN , clk	, write_din : in  std_logic ;
+		  din	   : in std_logic_vector (7 downto 0);
+          tx , tx_ready  : out std_logic ) ;
+end transmitter ;
+architecture arc_transmitter of transmitter is
+-- Shift Register component
+	component dint 	
+		port ( clrN , clk , PL , SE :in std_logic ;
+			din 	:in std_logic_vector (7 downto 0);
+			dout	:out std_logic );
+	end component ;
+-- State Machine component
+	component smt 	
+		port (	clrN , clk , write_din , t1 , eoc :in std_logic ;
+		tx_ready , ena_load , clr_dcount , clr_tx , ena_tx , ena_shift , ena_dcount ,set_tx	:out std_logic );
+	end component ;
+-- Flip Flop component
+	component outff
+		port ( preN , clk , set , en , d , reset : in  std_logic ;
+				q  : out std_logic ) ;
+	end component ;
+-- Counter component
+	component dcount
+		port ( clrN, clk , en , clr_dcount : in std_logic ;
+			eoc : out std_logic) ;
+	end component ;
+-- Timer component
+	component tcount
+		port( clrN, clk, te	:in std_logic;
+				t1			:out std_logic);
+	end component ;
+signal ena_load , ena_shift , set_tx , ena_tx , clr_tx , ena_dcount , clr_dcount , data , t1 ,te ,eoc ,pl : std_logic ;
+begin
+	pl <= write_din and ena_load ;
+	shiftr: dint port map (resetN , clk , pl, ena_shift , din , data ) ;
+	statem: smt port map  (resetN , clk , write_din , t1 , eoc , te , ena_load , clr_dcount , clr_tx , ena_tx , ena_shift , ena_dcount ,set_tx);
+	flipflop: outff port map ( resetN , clk , set_tx , ena_tx , data , clr_tx , tx) ;
+	counter: dcount port map ( resetN, clk , ena_dcount , clr_dcount , eoc) ;
+	timer: tcount port map ( resetN, clk, te , t1);
+end arc_transmitter ;
